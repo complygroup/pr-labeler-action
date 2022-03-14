@@ -27,7 +27,7 @@ async function action(context: Context = github.context) {
     const ref: string = context.payload.pull_request.head.ref;
     const config = await getConfig(octokit, configPath, context.repo, ref, defaultConfig);
     var labelsToAdd = getLabelsToAdd(config, ref);
-
+    var issueToLink = getIssueToLink(ref)
 
     if (labelsToAdd.length == 0) {
       labelsToAdd = [defaultLabel]
@@ -38,6 +38,14 @@ async function action(context: Context = github.context) {
       number: context.payload.pull_request.number,
       labels: labelsToAdd,
     });
+
+    if (issueToLink != null){
+      await octokit.issues.createComment({
+        ...context.repo,
+        number: context.payload.pull_request.number,
+        body: "Issue: " + issueToLink
+      });
+    }
   } catch (error) {
     if (process.env.NODE_ENV === 'test') {
       throw error;
@@ -61,6 +69,16 @@ function getLabelsToAdd(config: Config, branchName: string): string[] {
   }
 
   return labelsToAdd;
+}
+
+function getIssueToLink(branchName: string) {
+  const matches = branchName.match(/(#.{1,})/g)
+
+  if (matches){
+    return matches[0]
+  }
+
+  return null
 }
 
 export default action;

@@ -106,6 +106,29 @@ describe('pr-labeler-action', () => {
 
     await action(new MockContext(pullRequestOpenedFixture({ ref: 'hello_world' })));
   });
+
+  it("adds issue comment", async () => {
+    nock('https://api.github.com')
+      .get('/repos/Codertocat/Hello-World/contents/.github/pr-labeler.yml?ref=feature%2Fissue%231234')
+      .reply(200, configFixture())
+      .post('/repos/Codertocat/Hello-World/issues/1/labels', (body) => {
+        expect(body).toMatchObject({
+          labels: ['🎉 feature'],
+        });
+        return true;
+      })
+      .reply(200)
+      .post('/repos/Codertocat/Hello-World/issues/1/comments', (body: []) => {
+        expect(body).toMatchObject({
+          body: 'Issue: #1234',
+        });
+        return true;
+      })
+      .reply(200);
+
+    await action(new MockContext(pullRequestOpenedFixture({ ref: 'feature/issue#1234' })));
+    expect.assertions(2);
+  });
 });
 
 class MockContext extends Context {
