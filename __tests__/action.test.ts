@@ -92,12 +92,15 @@ describe('pr-labeler-action', () => {
     expect.assertions(1);
   });
 
-  it("adds no labels if the branch doesn't match any patterns", async () => {
+  it("adds default labels if the branch doesn't match any patterns", async () => {
     nock('https://api.github.com')
       .get('/repos/Codertocat/Hello-World/contents/.github/pr-labeler.yml?ref=hello_world')
       .reply(200, configFixture())
       .post('/repos/Codertocat/Hello-World/issues/1/labels', (body) => {
-        throw new Error("Shouldn't edit labels");
+        expect(body).toMatchObject({
+          labels: ['⚠️ incorrect branch name'],
+        });
+        return true;
       })
       .reply(200);
 
@@ -161,4 +164,5 @@ function setupEnvironmentVariables() {
   // configuration-path parameter is required
   // parameters are exposed as environment variables: https://help.github.com/en/github/automating-your-workflow-with-github-actions/workflow-syntax-for-github-actions#jobsjob_idstepswith
   process.env['INPUT_CONFIGURATION-PATH'] = '.github/pr-labeler.yml';
+  process.env['INPUT_DEFAULT-LABEL'] = '⚠️ incorrect branch name';
 }

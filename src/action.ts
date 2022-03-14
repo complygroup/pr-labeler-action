@@ -16,6 +16,7 @@ async function action(context: Context = github.context) {
     const GITHUB_TOKEN = process.env.GITHUB_TOKEN!;
     const octokit = new github.GitHub(GITHUB_TOKEN);
     const configPath = core.getInput('configuration-path', { required: true });
+    const defaultLabel = core.getInput('default-label', { required: true });
 
     if (!context.payload.pull_request) {
       throw new Error(
@@ -25,15 +26,18 @@ async function action(context: Context = github.context) {
 
     const ref: string = context.payload.pull_request.head.ref;
     const config = await getConfig(octokit, configPath, context.repo, ref, defaultConfig);
-    const labelsToAdd = getLabelsToAdd(config, ref);
+    var labelsToAdd = getLabelsToAdd(config, ref);
 
-    if (labelsToAdd.length > 0) {
-      await octokit.issues.addLabels({
-        ...context.repo,
-        number: context.payload.pull_request.number,
-        labels: labelsToAdd,
-      });
+
+    if (labelsToAdd.length == 0) {
+      labelsToAdd = [defaultLabel]
     }
+
+    await octokit.issues.addLabels({
+      ...context.repo,
+      number: context.payload.pull_request.number,
+      labels: labelsToAdd,
+    });
   } catch (error) {
     if (process.env.NODE_ENV === 'test') {
       throw error;
